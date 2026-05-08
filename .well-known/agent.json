@@ -1,0 +1,78 @@
+{
+  "name": "DenialGPT",
+  "description": "Denial Prevention and Gap Analysis Agent for hospital revenue cycle teams. Stops claim denials before they happen and tells you exactly whether an appeal will succeed — before you write a word.",
+  "version": "1.0.0",
+  "url": "https://YOUR_RAILWAY_URL",
+  "capabilities": {
+    "tools": true,
+    "streaming": false
+  },
+  "tools": [
+    {
+      "name": "analyze_denial",
+      "description": "Classifies a claim denial, extracts CARC codes, identifies required evidence, calculates appeal deadline, and diagnoses root cause in the billing workflow.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "denial_text": {
+            "type": "string",
+            "description": "Raw denial letter text or serialized FHIR ExplanationOfBenefit JSON"
+          },
+          "payer": {
+            "type": "string",
+            "description": "Payer name (e.g. Aetna, UnitedHealthcare)"
+          }
+        },
+        "required": ["denial_text", "payer"]
+      }
+    },
+    {
+      "name": "fetch_clinical_evidence",
+      "description": "Queries the FHIR sandbox for patient clinical records relevant to the denial type. Uses SHARP headers for authenticated access.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "denial_type": {
+            "type": "string",
+            "enum": ["Medical Necessity", "Coding Error", "Missing Documentation", "Untimely Filing"]
+          },
+          "patient_id": {
+            "type": "string",
+            "description": "FHIR Patient ID — injected automatically from X-Patient-ID header"
+          },
+          "date_of_service": {
+            "type": "string",
+            "description": "ISO date e.g. 2026-05-02"
+          }
+        },
+        "required": ["denial_type", "date_of_service"]
+      }
+    },
+    {
+      "name": "gap_analysis",
+      "description": "Compares payer requirements against patient FHIR clinical evidence. Returns appeal viability verdict (STRONG / WEAK / DO NOT APPEAL) with chain-of-thought reasoning.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "evidence_required": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "clinical_evidence": {
+            "type": "object"
+          },
+          "denial_type": {
+            "type": "string"
+          },
+          "carc_code": {
+            "type": "string"
+          },
+          "payer": {
+            "type": "string"
+          }
+        },
+        "required": ["evidence_required", "clinical_evidence", "denial_type", "carc_code", "payer"]
+      }
+    }
+  ]
+}
