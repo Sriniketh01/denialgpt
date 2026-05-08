@@ -78,55 +78,6 @@ def _load_api_keys() -> set[str]:
             keys.add(v)
     return keys
 
-@mcp.tool(
-    name="check_claim_policy",
-    description=(
-        "Checks a claim draft against CMS coverage policies and payer patterns "
-        "to identify denial risks before submission. Returns risk flags, policy "
-        "references, recommended fixes, and payer-specific intelligence."
-    ),
-)
-async def check_claim_policy(
-    cpt_code: str,
-    icd10_code: str,
-    payer: str,
-    place_of_service: str,
-    procedure_description: str,
-) -> dict:
-    """
-    Check a claim draft for denial risk before submission.
-
-    Args:
-        cpt_code: CPT procedure code, e.g. "73721".
-        icd10_code: ICD-10 diagnosis code, e.g. "M17.11".
-        payer: Insurance payer name, e.g. "Aetna".
-        place_of_service: Service setting, e.g. "outpatient".
-        procedure_description: Human-readable description, e.g. "MRI knee without contrast".
-
-    Returns:
-        overall_risk (LOW/MEDIUM/HIGH/UNKNOWN), risk_flags, policy_references,
-        recommended_fixes, and payer_intelligence from PAYER_PATTERNS.
-    """
-    claim = ClaimDraft(
-        cpt_code=cpt_code,
-        icd10_code=icd10_code,
-        payer=payer,
-        place_of_service=place_of_service,
-        procedure_description=procedure_description,
-    )
-    result = await run_check_claim_policy(claim)
-    return result.model_dump()
-
-
-@mcp.tool()
-async def analyze_denial(
-    denial_text: str,
-    payer: str,
-) -> dict:
-    """
-    Analyze a denial letter or FHIR ExplanationOfBenefit. Classifies denial type,
-    extracts CARC codes, identifies payer objection, evidence required, appeal
-    deadline, and performs root-cause analysis.
 
 def _check_api_key(request: Request) -> bool:
     """Return True if request is authorized (or no keys configured)."""
