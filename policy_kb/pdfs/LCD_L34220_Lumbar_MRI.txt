@@ -1,0 +1,2 @@
+LCD L34220 — Lumbar MRI
+Placeholder for embedding pipeline testing. Replace with actual CMS PDF.

@@ -1,3 +1,8 @@
+# === ADK + A2A Platform (server owned by Person A) ===
+google-adk>=1.25.0
+a2a-sdk[http-server]>=0.3.26,<1.0.0
+litellm==1.83.7
+
 # === Shared ===
 fastmcp==3.2.4
 fastapi==0.136.1
