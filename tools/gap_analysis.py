@@ -102,11 +102,12 @@ def _inject_payer_intelligence(
     intel block. Degrades gracefully if no match found or import fails.
     """
     try:
-        from utils.payer_patterns import lookup_payer_pattern
+        from shared.payer_patterns import get_payer_pattern
 
-        payer = denial_analysis.get("payer", "Aetna")
-        cpt   = "71046"    # default for demo
-        icd10 = "M17.11"   # default for demo
+        payer  = denial_analysis.get("payer", "Aetna")
+        cpt    = "27447"   # default for demo (TKA)
+        icd10  = "M17.11"  # default for demo
+        carc   = denial_analysis.get("carc_code", "")
 
         # Try to extract CPT code from evidence_required list
         for item in denial_analysis.get("evidence_required", []):
@@ -115,7 +116,8 @@ def _inject_payer_intelligence(
                 cpt = hit.group(1)
                 break
 
-        pattern = lookup_payer_pattern(payer, cpt, icd10)
+        # 4-key lookup (post-denial with CARC) falls back to 3-key automatically
+        pattern = get_payer_pattern(payer, cpt, icd10, carc_code=carc or None)
         if pattern:
             result["payer_intelligence"] = {
                 "payer": payer,
@@ -125,10 +127,11 @@ def _inject_payer_intelligence(
                 "top_reason": pattern["top_reason"],
                 "appeal_win_rate": pattern["appeal_win_rate"],
                 "winning_evidence": pattern["winning_evidence"],
+                "prevention": pattern.get("prevention", ""),
             }
             logger.info(
-                "payer_intelligence injected payer=%s cpt=%s win_rate=%.0f%%",
-                payer, cpt, pattern["appeal_win_rate"] * 100,
+                "payer_intelligence injected payer=%s cpt=%s win_rate=%s",
+                payer, cpt, pattern["appeal_win_rate"],
             )
         else:
             result["payer_intelligence"] = None
