@@ -1,30 +1,34 @@
 {
-  "name": "DenialGPT",
-  "description": "Denial Prevention and Gap Analysis Agent for hospital revenue cycle teams.",
-  "url": "https://web-production-1ddf4.up.railway.app/mcp",
-  "version": "1.0",
-  "capabilities": {
-    "streaming": false,
-    "pushNotifications": false,
-    "stateTransitionHistory": false
-  },
-  "defaultInputModes": ["text"],
-  "defaultOutputModes": ["text"],
-  "skills": [
-    {
-      "id": "analyze_denial",
-      "name": "analyze_denial",
-      "description": "Classifies a claim denial, extracts CARC codes, identifies required evidence, calculates appeal deadline, and diagnoses root cause."
-    },
-    {
-      "id": "fetch_clinical_evidence",
-      "name": "fetch_clinical_evidence",
-      "description": "Queries the FHIR sandbox for patient clinical records relevant to the denial type using SHARP headers."
-    },
-    {
-      "id": "gap_analysis",
-      "name": "gap_analysis",
-      "description": "Compares payer requirements against FHIR clinical evidence. Returns STRONG / WEAK / DO NOT APPEAL verdict with chain-of-thought reasoning."
-    }
-  ]
+    "name":  "DenialGPT",
+    "description":  "Denial Prevention and Gap Analysis Agent for hospital revenue cycle teams.",
+    "url":  "https://denialgpt.onrender.com/mcp",
+    "version":  "1.0",
+    "capabilities":  {
+                         "streaming":  false,
+                         "pushNotifications":  false,
+                         "stateTransitionHistory":  false
+                     },
+    "defaultInputModes":  [
+                              "text"
+                          ],
+    "defaultOutputModes":  [
+                               "text"
+                           ],
+    "skills":  [
+                   {
+                       "id":  "analyze_denial",
+                       "name":  "analyze_denial",
+                       "description":  "Classifies a claim denial, extracts CARC codes, identifies required evidence, calculates appeal deadline, and diagnoses root cause."
+                   },
+                   {
+                       "id":  "fetch_clinical_evidence",
+                       "name":  "fetch_clinical_evidence",
+                       "description":  "Queries the FHIR sandbox for patient clinical records relevant to the denial type using SHARP headers."
+                   },
+                   {
+                       "id":  "gap_analysis",
+                       "name":  "gap_analysis",
+                       "description":  "Compares payer requirements against FHIR clinical evidence. Returns STRONG / WEAK / DO NOT APPEAL verdict with chain-of-thought reasoning."
+                   }
+               ]
 }
