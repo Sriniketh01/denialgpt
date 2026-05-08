@@ -1,7 +1,7 @@
 # === ADK + A2A Platform ===
 google-adk>=1.25.0
 a2a-sdk[http-server]>=0.3.26,<1.0.0
-litellm==1.83.7
+# litellm is a transitive dep of google-adk — do not pin separately
 
 # === Shared ===
 fastmcp==3.2.4
@@ -9,7 +9,7 @@ fastapi==0.136.1
 httpx==0.28.1
 anthropic==0.100.0
 python-dotenv==1.2.2
-pydantic==2.13.4
+pydantic>=2.0
 uvicorn==0.46.0
 
 # === LangGraph ===
