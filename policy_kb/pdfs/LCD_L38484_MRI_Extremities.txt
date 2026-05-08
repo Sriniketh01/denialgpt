@@ -1,0 +1,55 @@
+CMS NCD 220.2 — Magnetic Resonance Imaging (MRI)
+Coverage Indications and Medical Necessity
+
+MRI is covered when ordered by a treating physician and when
+the service is reasonable and necessary for the diagnosis or
+treatment of illness or injury.
+
+For musculoskeletal MRI of the extremities (including knee),
+coverage requires:
+
+1. PRIOR AUTHORIZATION: Many Medicare Advantage and commercial
+payers including Aetna require prior authorization for
+outpatient MRI of the extremities before the service is
+rendered. Claims submitted without prior authorization will
+be denied.
+
+2. CONSERVATIVE THERAPY REQUIREMENT: MRI of the knee is
+considered medically necessary when the patient has
+persistent joint pain that is unresponsive to conservative
+treatment for a minimum of 3-6 weeks. Conservative therapy
+includes: physical therapy (PT), non-steroidal
+anti-inflammatory drugs (NSAIDs), rest, ice, compression,
+and elevation. Documentation of failed conservative therapy
+must be present in the medical record.
+
+3. CLINICAL INDICATIONS FOR KNEE MRI (CPT 73721):
+- Suspected meniscal tear with mechanical symptoms (locking,
+  catching, giving way) after failed conservative therapy
+- Suspected ligamentous injury (ACL, PCL, MCL, LCL) not
+  resolved with conservative management
+- Osteoarthritis (M17.11) with persistent pain unresponsive
+  to 3+ months of conservative therapy when surgical
+  planning is being considered
+- Evaluation of cartilage damage not visible on X-ray
+- Osteonecrosis or avascular necrosis of the knee
+
+4. DOCUMENTATION REQUIREMENTS:
+- Physician order with clinical indication
+- Evidence of failed conservative therapy (PT notes, NSAID
+  prescription history, duration of treatment)
+- Prior authorization confirmation number from payer
+- Relevant prior imaging results (X-ray must precede MRI
+  in most cases)
+
+5. DENIAL RISK FACTORS for CPT 73721 + M17.11 (Aetna):
+- Missing prior authorization: claim will be denied
+  (CARC 50 or CARC 15)
+- Insufficient conservative therapy documentation: less
+  than 3-6 weeks documented therapy
+- No clinical justification linking MRI to treatment
+  decision or surgical planning
+- X-ray not performed prior to MRI order
+
+Sources: CMS NCD 220.2, Aetna Clinical Policy Bulletin
+No. 0171 (MRI of the Extremities)
