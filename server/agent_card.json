@@ -1,0 +1,22 @@
+{
+  "name": "DenialGPT",
+  "description": "AI agent that prevents insurance claim denials before submission and analyzes appeal viability after denial. Orthopedics specialty, Aetna payer.",
+  "version": "0.1.0",
+  "capabilities": {
+    "tools": [
+      "check_claim_policy",
+      "analyze_denial",
+      "fetch_clinical_evidence",
+      "gap_analysis"
+    ]
+  },
+  "endpoints": {
+    "base_url": "TODO_RAILWAY_URL"
+  },
+  "metadata": {
+    "hackathon": "Agents Assemble 2026",
+    "platform": "Prompt Opinion",
+    "specialty": "Orthopedics",
+    "payer_focus": "Aetna"
+  }
+}
