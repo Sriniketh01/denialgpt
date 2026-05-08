@@ -2,7 +2,7 @@
   "name": "DenialGPT",
   "description": "Denial Prevention and Gap Analysis Agent for hospital revenue cycle teams. Stops claim denials before they happen and tells you exactly whether an appeal will succeed — before you write a word.",
   "version": "1.0.0",
-  "url": "https://YOUR_RAILWAY_URL",
+  "url": "https:web-production-1ddf4.up.railway.app",
   "capabilities": {
     "tools": true,
     "streaming": false
