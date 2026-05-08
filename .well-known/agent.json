@@ -1,78 +1,48 @@
 {
   "name": "DenialGPT",
-  "description": "Denial Prevention and Gap Analysis Agent for hospital revenue cycle teams. Stops claim denials before they happen and tells you exactly whether an appeal will succeed — before you write a word.",
+  "description": "Denial Prevention and Gap Analysis Agent for hospital revenue cycle teams. Classifies claim denials, fetches FHIR clinical evidence, and determines appeal viability (STRONG / WEAK / DO NOT APPEAL) with chain-of-thought reasoning.",
   "version": "1.0.0",
-  "url": "https://web-production-1ddf4.up.railway.app",
+  "url": "https://web-production-1ddf4.up.railway.app/mcp",
   "capabilities": {
-    "tools": true,
-    "streaming": false
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
   },
-  "tools": [
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text"],
+  "skills": [
     {
+      "id": "analyze_denial",
       "name": "analyze_denial",
       "description": "Classifies a claim denial, extracts CARC codes, identifies required evidence, calculates appeal deadline, and diagnoses root cause in the billing workflow.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "denial_text": {
-            "type": "string",
-            "description": "Raw denial letter text or serialized FHIR ExplanationOfBenefit JSON"
-          },
-          "payer": {
-            "type": "string",
-            "description": "Payer name (e.g. Aetna, UnitedHealthcare)"
-          }
-        },
-        "required": ["denial_text", "payer"]
-      }
+      "tags": ["denial", "billing", "CARC", "revenue-cycle"],
+      "inputModes": ["text"],
+      "outputModes": ["text"],
+      "examples": [
+        "Analyze this denial: CARC 50, Medical Necessity not established for knee MRI, Aetna"
+      ]
     },
     {
+      "id": "fetch_clinical_evidence",
       "name": "fetch_clinical_evidence",
-      "description": "Queries the FHIR sandbox for patient clinical records relevant to the denial type. Uses SHARP headers for authenticated access.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "denial_type": {
-            "type": "string",
-            "enum": ["Medical Necessity", "Coding Error", "Missing Documentation", "Untimely Filing"]
-          },
-          "patient_id": {
-            "type": "string",
-            "description": "FHIR Patient ID — injected automatically from X-Patient-ID header"
-          },
-          "date_of_service": {
-            "type": "string",
-            "description": "ISO date e.g. 2026-05-02"
-          }
-        },
-        "required": ["denial_type", "date_of_service"]
-      }
+      "description": "Queries the FHIR sandbox for patient clinical records relevant to the denial type. Uses SHARP headers for authenticated FHIR access.",
+      "tags": ["FHIR", "clinical", "evidence", "SHARP"],
+      "inputModes": ["text"],
+      "outputModes": ["text"],
+      "examples": [
+        "Fetch Medical Necessity evidence for patient from FHIR sandbox"
+      ]
     },
     {
+      "id": "gap_analysis",
       "name": "gap_analysis",
-      "description": "Compares payer requirements against patient FHIR clinical evidence. Returns appeal viability verdict (STRONG / WEAK / DO NOT APPEAL) with chain-of-thought reasoning.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "evidence_required": {
-            "type": "array",
-            "items": {"type": "string"}
-          },
-          "clinical_evidence": {
-            "type": "object"
-          },
-          "denial_type": {
-            "type": "string"
-          },
-          "carc_code": {
-            "type": "string"
-          },
-          "payer": {
-            "type": "string"
-          }
-        },
-        "required": ["evidence_required", "clinical_evidence", "denial_type", "carc_code", "payer"]
-      }
+      "description": "Compares payer requirements against patient FHIR clinical evidence. Returns appeal viability verdict (STRONG / WEAK / DO NOT APPEAL) with chain-of-thought reasoning and next steps.",
+      "tags": ["gap-analysis", "appeal", "viability", "revenue-cycle"],
+      "inputModes": ["text"],
+      "outputModes": ["text"],
+      "examples": [
+        "Analyze the gap between Aetna's medical necessity requirements and the patient's FHIR record"
+      ]
     }
   ]
 }
