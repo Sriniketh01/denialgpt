@@ -21,9 +21,10 @@ chromadb==1.5.9
 llama-index==0.14.21
 llama-index-vector-stores-chroma==0.5.5
 llama-index-readers-file==0.6.0
-llama-index-embeddings-voyageai==0.6.0
-# 0.3.0 has no stable release yet — use rc explicitly
-voyageai==0.3.0rc0
+# voyageai: runtime retrieve.py uses the 0.2.x Client API
+# llama-index-embeddings-voyageai (0.6.0) needs voyageai>=0.3.6 which doesn't exist yet
+# — install it separately only when running embed_pdfs.py to rebuild the ChromaDB index
+voyageai==0.2.4
 
 # === Testing ===
 pytest>=8.0.0
