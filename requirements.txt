@@ -1,4 +1,4 @@
-# === ADK + A2A Platform (server owned by Person A) ===
+# === ADK + A2A Platform ===
 google-adk>=1.25.0
 a2a-sdk[http-server]>=0.3.26,<1.0.0
 litellm==1.83.7
@@ -12,20 +12,19 @@ python-dotenv==1.2.2
 pydantic==2.13.4
 uvicorn==0.46.0
 
-# === Person A — Post-Denial Pipeline ===
+# === LangGraph ===
 langgraph==1.1.10
 langchain-anthropic==1.4.3
 
-# === Person B — Prevention + Policy KB ===
+# === Policy KB (Person B) ===
 chromadb==1.5.9
 llama-index==0.14.21
 llama-index-vector-stores-chroma==0.5.5
 llama-index-readers-file==0.6.0
 llama-index-embeddings-voyageai==0.6.0
-voyageai>=0.3.0
-pymupdf==1.27.2.3
+# 0.3.0 has no stable release yet — use rc explicitly
+voyageai==0.3.0rc0
 
 # === Testing ===
-pytest==9.0.3
-pytest-asyncio==1.3.0
-python-dotenv>=1.0.0
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
