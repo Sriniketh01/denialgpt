@@ -359,6 +359,35 @@ async def gap_analysis(denial_analysis: dict, clinical_evidence: dict) -> dict:
 app = FastAPI(title="DenialGPT", version="1.0.0")
 
 
+# ---------------------------------------------------------------------------
+# Clinical content detector
+# ---------------------------------------------------------------------------
+
+_CLINICAL_KEYWORDS = {
+    "patient", "diagnosis", "medication", "condition", "procedure",
+    "observation", "encounter", "ehr", "clinical", "icd", "cpt",
+    "history", "physical therapy", "imaging", "conservative",
+    "none on record", "on record", "documented", "prescribed",
+}
+
+def _message_has_clinical_content(text: str) -> bool:
+    """Return True if the message body appears to contain forwarded clinical data.
+
+    PO's General Chat Agent fetches FHIR records and pastes them as structured
+    text before calling DenialGPT.  We detect this so gap_analysis can run even
+    when FHIR credentials weren't forwarded in the metadata.
+
+    Heuristics:
+      - Message is long enough to contain real clinical content (>300 chars)
+      - At least 2 clinical keywords are present (case-insensitive)
+    """
+    if len(text) < 300:
+        return False
+    lower = text.lower()
+    hits = sum(1 for kw in _CLINICAL_KEYWORDS if kw in lower)
+    return hits >= 2
+
+
 # ── A2A v1 agent endpoint ──────────────────────────────────────────────────
 
 @app.post("/")
@@ -440,9 +469,11 @@ async def a2a_agent(request: Request):
         logger.info("analyze_denial done denial_type=%s carc=%s",
                     denial_result.get("denial_type"), denial_result.get("carc_code"))
 
+        from tools.gap_analysis import run_gap_analysis
+
         if fhir_ctx and fhir_ctx.get("patientId"):
+            # ── Path A: FHIR credentials forwarded — fetch evidence directly ──
             from tools.fetch_evidence import run_fetch_clinical_evidence
-            from tools.gap_analysis import run_gap_analysis
 
             dos = date.today().isoformat()
             evidence_result = await run_fetch_clinical_evidence(
@@ -458,10 +489,34 @@ async def a2a_agent(request: Request):
                 denial_analysis=denial_result,
                 clinical_evidence=evidence_result,
             )
-            logger.info("gap_analysis done viability=%s", gap_result.get("appeal_viability"))
-
+            logger.info("gap_analysis path=fhir viability=%s", gap_result.get("appeal_viability"))
             result_text = _format_full_result(denial_result, gap_result)
+
+        elif _message_has_clinical_content(user_text):
+            # ── Path B: General Chat Agent forwarded clinical text — use it ──
+            # PO's General Chat Agent fetches FHIR data and pastes it as text.
+            # Package it as a clinical_evidence dict so gap_analysis can reason over it.
+            evidence_result = {
+                "evidence": {"clinical_text": user_text},
+                "resources_fetched": ["message_text"],
+                "fhir_resource_ids": [],
+                "fetch_errors": [],
+                "summary": (
+                    "Clinical data provided as structured text in the A2A message body "
+                    "by the referring agent. FHIR credentials were not forwarded directly."
+                ),
+            }
+            logger.info("fetch_evidence path=text_body chars=%d", len(user_text))
+
+            gap_result = await run_gap_analysis(
+                denial_analysis=denial_result,
+                clinical_evidence=evidence_result,
+            )
+            logger.info("gap_analysis path=text viability=%s", gap_result.get("appeal_viability"))
+            result_text = _format_full_result(denial_result, gap_result)
+
         else:
+            # ── Path C: No clinical context at all — return denial analysis only ──
             result_text = _format_denial_only(denial_result)
 
     except Exception as exc:
