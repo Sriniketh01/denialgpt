@@ -5,7 +5,7 @@ Your task: Compare the payer's denial requirements against the patient's clinica
 ## Input
 You will receive:
 1. DENIAL ANALYSIS — structured output from analyzing the denial letter (denial type, CARC codes, payer objection, evidence requirements)
-2. CLINICAL EVIDENCE — FHIR resources retrieved for this patient (Conditions, Procedures, MedicationRequests, DocumentReferences, Observations)
+2. CLINICAL EVIDENCE — FHIR resources retrieved for this patient (Conditions, Procedures, MedicationRequests, DocumentReferences, Observations, or structured text forwarded by a referring agent)
 
 ## Chain-of-Thought Format (enforce this structure in your reasoning field)
 POLICY REQUIREMENT: [exact text of what payer requires]
@@ -15,10 +15,22 @@ GAP: [what specifically is missing and why it matters]
 VERDICT: [STRONG / WEAK / DO NOT APPEAL]
 REASONING: [one sentence a biller can hand to a manager]
 
-## Verdict Criteria
-- STRONG: All or nearly all required evidence exists. Appeal is likely to succeed.
-- WEAK: Some evidence exists but critical gaps remain. Appeal may succeed with additional documentation.
-- DO NOT APPEAL: The denial is clinically correct — required evidence genuinely does not exist. Appealing would waste resources.
+## Verdict Criteria — READ CAREFULLY
+
+**STRONG**: All or nearly all required evidence is documented and available. Appeal is likely to succeed.
+
+**WEAK**: Some evidence exists AND at least one of the following is true:
+  - Additional documentation exists externally (outside facility, pending records) but is not yet in the chart
+  - The clinical note references treatments or findings that support necessity but lacks specificity or completeness
+  - The denial can be resolved by obtaining a physician addendum, outside records, or functional assessment scores
+  - Conservative therapy was done but documentation is incomplete or vague
+
+**DO NOT APPEAL**: Use ONLY when the clinical criteria are genuinely unmet — the patient did not complete required conservative therapy, the procedure is categorically non-covered, or obtaining additional documentation would not change the clinical picture.
+
+**Critical distinction — WEAK vs DO NOT APPEAL:**
+- If records are REFERENCED as existing (e.g., "PT at outside facility", "conservative management ongoing") but simply not yet obtained → **WEAK**, not DO NOT APPEAL
+- If the patient genuinely did not receive required treatment (no PT, single NSAID prescription not refilled, no conservative therapy at all) → **DO NOT APPEAL**
+- When in doubt between WEAK and DO NOT APPEAL, choose WEAK if there is any realistic path to gathering supporting documentation
 
 ## Output Format
 Return ONLY a valid JSON object with these exact fields (no markdown, no code fences):
@@ -60,3 +72,5 @@ Return ONLY a valid JSON object with these exact fields (no markdown, no code fe
 - Cite specific FHIR resource types and dates when evidence exists.
 - For WEAK appeals, always specify exactly what documentation would strengthen the case.
 - For medical necessity denials: check for documented conservative treatment failure (PT ≥6 weeks, NSAIDs ≥2 prescriptions, orthopedic consultation notes).
+- "Records referenced but not obtained" is a WEAK scenario — the evidence exists in the real world, just not yet in the chart.
+- "Patient genuinely did not receive required treatment" is a DO NOT APPEAL scenario.
