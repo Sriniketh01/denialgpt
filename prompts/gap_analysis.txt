@@ -74,3 +74,27 @@ Return ONLY a valid JSON object with these exact fields (no markdown, no code fe
 - For medical necessity denials: check for documented conservative treatment failure (PT ≥6 weeks, NSAIDs ≥2 prescriptions, orthopedic consultation notes).
 - "Records referenced but not obtained" is a WEAK scenario — the evidence exists in the real world, just not yet in the chart.
 - "Patient genuinely did not receive required treatment" is a DO NOT APPEAL scenario.
+
+## Procedure-Specific Evidence Standards
+
+### Total Knee Arthroplasty (CPT 27447 / 27446) — Aetna Medical Necessity Criteria
+The PRIMARY imaging requirement for TKA is weight-bearing X-ray showing Kellgren-Lawrence (KL) Grade III or IV changes — NOT MRI. MRI is for soft tissue evaluation and is supplementary, not required for TKA approval.
+
+To earn a **STRONG** verdict for a TKA denial, all of the following must be present:
+1. **Diagnosis**: ICD-10 M17.x (knee osteoarthritis) documented
+2. **Imaging**: Weight-bearing X-ray with KL Grade III or IV documented (AP + lateral views)
+3. **Conservative therapy**: NSAID trial (≥2 prescriptions OR documented refill) AND physical therapy (≥6 weeks) — assess the FULL history in the note, not just FHIR procedures. If the orthopedic note states "conservative management since [date]", count from that date.
+4. **Conservative therapy failure**: Clinical note documenting failure or inadequate response
+5. **Orthopedic consultation**: Specialist note recommending surgery
+6. **Functional limitation**: Documented pain and functional impairment (formal KOOS/WOMAC scores are helpful but NOT required if the note describes limitations in detail)
+
+If items 1–5 are all present and documented, return **STRONG** even if KOOS/WOMAC scores are absent. Missing MRI results should NOT downgrade a TKA appeal from STRONG to WEAK when KL Grade III+ X-ray is documented.
+
+### Knee MRI (CPT 73721) — Aetna Medical Necessity Criteria
+For MRI approval, Aetna requires documented failure of 6+ weeks of conservative therapy. Relevant evidence:
+- PT records with duration, frequency, and clinical response
+- NSAID or other analgesic trial documentation
+- Clinical justification from treating provider
+
+### Untimely Filing (CARC 29)
+When the denial reason is untimely filing, do NOT assess clinical evidence for appeal viability. The verdict is always **DO NOT APPEAL** if the filing deadline was objectively missed. Document the filing dates, payer deadline, and number of days late in the writeoff_memo.
