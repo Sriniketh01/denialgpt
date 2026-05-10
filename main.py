@@ -35,7 +35,6 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastmcp import FastMCP
 
-from middleware.sharp import SHARPContext
 from tools.analyze_denial import run_analyze_denial
 from prevention.check_claim_policy import ClaimDraft, run_check_claim_policy
 
@@ -680,7 +679,7 @@ async def health_check():
         "status": "ok",
         "service": "DenialGPT",
         "version": "1.0.0",
-        "tools_registered": ["analyze_denial", "fetch_clinical_evidence", "gap_analysis"],
+        "tools_registered": ["analyze_denial", "fetch_clinical_evidence", "gap_analysis", "check_claim_policy"],
         "agent_card": f"{base_url}/.well-known/agent-card.json",
         "dev_mode": dev_mode,
     }
