@@ -24,6 +24,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import uuid
 from datetime import date
 from pathlib import Path
@@ -176,6 +177,17 @@ def _build_agent_card() -> dict[str, Any]:
                     "Returns STRONG / WEAK / DO NOT APPEAL verdict with chain-of-thought reasoning."
                 ),
                 "tags": ["gap-analysis", "appeal", "revenue-cycle"],
+            },
+            {
+                "id": "check_claim_policy",
+                "name": "check_claim_policy",
+                "description": (
+                    "Checks a claim draft (CPT code + ICD-10 diagnosis + payer + place of service) "
+                    "against CMS LCD/NCD coverage policies and historical payer denial patterns "
+                    "to identify denial risks before submission. Returns overall risk level, "
+                    "specific risk flags with policy citations, and payer intelligence."
+                ),
+                "tags": ["prevention", "prior-auth", "billing", "revenue-cycle"],
             },
         ],
     }
@@ -363,6 +375,104 @@ app = FastAPI(title="DenialGPT", version="1.0.0")
 # Clinical content detector
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Prevention request detection
+# ---------------------------------------------------------------------------
+
+_CPT_RE    = re.compile(r'\b\d{5}\b')
+_ICD10_RE  = re.compile(r'\b[A-Z]\d{2}\.?\d*\b')
+_DENIAL_KEYWORDS = {
+    "denied", "denial", "rejection", "rejected", "carc", "eob",
+    "explanation of benefits", "not covered", "claim number", "remittance",
+    "was denied", "has been denied",
+}
+
+
+def _is_prevention_request(text: str) -> bool:
+    """Return True if the message looks like a claim-check request, not a denial letter."""
+    lower = text.lower()
+    if any(kw in lower for kw in _DENIAL_KEYWORDS):
+        return False
+    return bool(_CPT_RE.search(text)) and bool(_ICD10_RE.search(text))
+
+
+def _extract_claim_draft(text: str) -> dict:
+    """Parse CPT code, ICD-10, payer, and place of service from free text."""
+    cpt_match   = _CPT_RE.search(text)
+    icd10_match = _ICD10_RE.search(text)
+    cpt_code   = cpt_match.group(0)   if cpt_match   else "unknown"
+    icd10_code = icd10_match.group(0) if icd10_match else "unknown"
+
+    lower = text.lower()
+    payer = "Aetna"  # default for demo scope
+    for name in ["aetna", "united", "cigna", "humana", "blue cross", "bcbs"]:
+        if name in lower:
+            payer = name.title()
+            break
+
+    pos = "inpatient" if "inpatient" in lower else "outpatient"
+
+    return {
+        "cpt_code":             cpt_code,
+        "icd10_code":           icd10_code,
+        "payer":                payer,
+        "place_of_service":     pos,
+        "procedure_description": text.strip()[:300],
+    }
+
+
+def _format_prevention_result(result: dict) -> str:
+    """Format a PolicyCheckResult dict as a human-readable markdown response."""
+    risk = result.get("overall_risk", "UNKNOWN")
+    icon = {"LOW": "🟢", "MEDIUM": "🟡", "HIGH": "🔴", "UNKNOWN": "⚪"}.get(risk, "⚪")
+
+    lines = [
+        "## DenialGPT — Claim Prevention Check",
+        "",
+        f"**Overall Denial Risk: {risk} {icon}**",
+        "",
+    ]
+
+    flags = result.get("risk_flags", [])
+    if flags:
+        lines.append("### Risk Flags")
+        for flag in flags:
+            sev = flag.get("severity", "?")
+            lines.append(f"- **[{sev}]** {flag.get('flag', '')}")
+            lines.append(f"  - *Policy basis:* {flag.get('policy_basis', '')}")
+            lines.append(f"  - *Action:* {flag.get('recommendation', '')}")
+        lines.append("")
+
+    fixes = result.get("recommended_fixes", [])
+    if fixes:
+        lines.append("### Recommended Actions Before Submitting")
+        for i, fix in enumerate(fixes, 1):
+            lines.append(f"{i}. {fix}")
+        lines.append("")
+
+    intel = result.get("payer_intelligence")
+    if intel:
+        lines += [
+            "### Payer Intelligence",
+            f"- **Historical Denial Rate:** {intel.get('denial_rate', 'N/A')}",
+            f"- **Top Denial Reason:** {intel.get('top_reason', 'N/A')}",
+            f"- **Appeal Win Rate:** {intel.get('appeal_win_rate', 'N/A')}",
+            f"- **Winning Evidence:** {intel.get('winning_evidence', 'N/A')}",
+            f"- **Prevention Note:** {intel.get('prevention', 'N/A')}",
+            "",
+        ]
+
+    refs = result.get("policy_references", [])
+    if refs:
+        lines.append(f"*Policy references: {', '.join(refs)}*")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Clinical content detector
+# ---------------------------------------------------------------------------
+
 _CLINICAL_KEYWORDS = {
     "patient", "diagnosis", "medication", "condition", "procedure",
     "observation", "encounter", "ehr", "clinical", "icd", "cpt",
@@ -463,7 +573,24 @@ async def a2a_agent(request: Request):
             "Please paste a denial letter or describe the claim denial to analyze.",
         )
 
-    # ── Run tool chain ─────────────────────────────────────────────────────
+    # ── Prevention path — claim check before submission ────────────────────
+    if _is_prevention_request(user_text):
+        try:
+            claim_data = _extract_claim_draft(user_text)
+            claim = ClaimDraft(**claim_data)
+            logger.info(
+                "prevention_check cpt=%s icd10=%s payer=%s",
+                claim.cpt_code, claim.icd10_code, claim.payer,
+            )
+            prevention_result = await run_check_claim_policy(claim)
+            result_text = _format_prevention_result(prevention_result.model_dump())
+            logger.info("prevention_check done risk=%s", prevention_result.overall_risk)
+        except Exception as exc:
+            logger.exception("prevention_check_error")
+            result_text = f"Error running prevention check: {exc}"
+        return _a2a_response(rpc_id, result_text)
+
+    # ── Post-denial tool chain ─────────────────────────────────────────────
     try:
         denial_result = await run_analyze_denial(denial_text=user_text, payer="Aetna")
         logger.info("analyze_denial done denial_type=%s carc=%s",
