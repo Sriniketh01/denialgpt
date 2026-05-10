@@ -420,54 +420,6 @@ def _extract_claim_draft(text: str) -> dict:
     }
 
 
-def _format_prevention_result(result: dict) -> str:
-    """Format a PolicyCheckResult dict as a human-readable markdown response."""
-    risk = result.get("overall_risk", "UNKNOWN")
-    icon = {"LOW": "🟢", "MEDIUM": "🟡", "HIGH": "🔴", "UNKNOWN": "⚪"}.get(risk, "⚪")
-
-    lines = [
-        "## DenialGPT — Claim Prevention Check",
-        "",
-        f"**Overall Denial Risk: {risk} {icon}**",
-        "",
-    ]
-
-    flags = result.get("risk_flags", [])
-    if flags:
-        lines.append("### Risk Flags")
-        for flag in flags:
-            sev = flag.get("severity", "?")
-            lines.append(f"- **[{sev}]** {flag.get('flag', '')}")
-            lines.append(f"  - *Policy basis:* {flag.get('policy_basis', '')}")
-            lines.append(f"  - *Action:* {flag.get('recommendation', '')}")
-        lines.append("")
-
-    fixes = result.get("recommended_fixes", [])
-    if fixes:
-        lines.append("### Recommended Actions Before Submitting")
-        for i, fix in enumerate(fixes, 1):
-            lines.append(f"{i}. {fix}")
-        lines.append("")
-
-    intel = result.get("payer_intelligence")
-    if intel:
-        lines += [
-            "### Payer Intelligence",
-            f"- **Historical Denial Rate:** {intel.get('denial_rate', 'N/A')}",
-            f"- **Top Denial Reason:** {intel.get('top_reason', 'N/A')}",
-            f"- **Appeal Win Rate:** {intel.get('appeal_win_rate', 'N/A')}",
-            f"- **Winning Evidence:** {intel.get('winning_evidence', 'N/A')}",
-            f"- **Prevention Note:** {intel.get('prevention', 'N/A')}",
-            "",
-        ]
-
-    refs = result.get("policy_references", [])
-    if refs:
-        lines.append(f"*Policy references: {', '.join(refs)}*")
-
-    return "\n".join(lines)
-
-
 # ---------------------------------------------------------------------------
 # Clinical content detector
 # ---------------------------------------------------------------------------
@@ -672,7 +624,7 @@ async def a2a_agent(request: Request):
                 claim.cpt_code, claim.icd10_code, claim.payer,
             )
             prevention_result = await run_check_claim_policy(claim)
-            result_text = _format_prevention_result(prevention_result.model_dump())
+            result_text = _format_prevention_result(prevention_result.model_dump(), claim_data)
             logger.info("prevention_check done risk=%s", prevention_result.overall_risk)
         except Exception as exc:
             logger.exception("prevention_check_error")
@@ -683,8 +635,6 @@ async def a2a_agent(request: Request):
     try:
         # ── Path P: Pre-submission prevention query → check_claim_policy ──────
         if _message_is_prevention_query(user_text):
-            from prevention.check_claim_policy import ClaimDraft, run_check_claim_policy
-
             params = _extract_claim_params(user_text)
             logger.info("prevention_query cpt=%s icd10=%s payer=%s",
                         params["cpt_code"], params["icd10_code"], params["payer"])
