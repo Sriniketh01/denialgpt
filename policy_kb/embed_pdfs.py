@@ -31,11 +31,17 @@ import sys
 from pathlib import Path
 
 import chromadb
-import fitz  # PyMuPDF
 from dotenv import load_dotenv
 from llama_index.core import Document
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.embeddings.voyageai import VoyageEmbedding
+
+# PyMuPDF is optional — only available in local dev, not on Render.
+# PDF extraction is skipped gracefully when fitz is not installed.
+try:
+    import fitz  # PyMuPDF
+    _FITZ_AVAILABLE = True
+except ImportError:
+    _FITZ_AVAILABLE = False
 
 # ---------------------------------------------------------------------------
 # Config
@@ -175,7 +181,10 @@ def extract_text_from_pdf(pdf_path: Path) -> str:
     """Extract clean full text from a PDF using PyMuPDF.
 
     Joins all pages with double newlines to preserve paragraph boundaries.
+    Raises RuntimeError if fitz (PyMuPDF) is not available.
     """
+    if not _FITZ_AVAILABLE:
+        raise RuntimeError("PyMuPDF (fitz) is not installed — cannot extract PDF text")
     doc = fitz.open(str(pdf_path))
     pages: list[str] = []
     for page in doc:
@@ -242,6 +251,9 @@ def load_and_chunk_pdfs(
 
         # -- Extract raw text depending on file type --
         if doc_path.suffix.lower() == ".pdf":
+            if not _FITZ_AVAILABLE:
+                print(f"    SKIP (PyMuPDF not installed — use .txt policy files on Render): {filename}")
+                continue
             try:
                 full_text = extract_text_from_pdf(doc_path)
             except Exception as exc:
@@ -294,15 +306,17 @@ def embed_texts(
     texts: list[str],
     api_key: str,
 ) -> list[list[float]]:
-    """Generate embeddings for a list of texts using Voyage AI."""
-    embed_model = VoyageEmbedding(
-        model_name=EMBEDDING_MODEL,
-        voyage_api_key=api_key,
-        embed_batch_size=EMBED_BATCH_SIZE,
-    )
+    """Generate embeddings for a list of texts using Voyage AI (voyageai.Client API)."""
+    import voyageai
+
+    vo = voyageai.Client(api_key=api_key)
+    all_embeddings: list[list[float]] = []
     print(f"  Generating embeddings for {len(texts)} chunk(s) ...")
-    embeddings: list[list[float]] = embed_model.get_text_embedding_batch(texts)
-    return embeddings
+    for i in range(0, len(texts), EMBED_BATCH_SIZE):
+        batch = texts[i : i + EMBED_BATCH_SIZE]
+        result = vo.embed(batch, model=EMBEDDING_MODEL, input_type="document")
+        all_embeddings.extend(result.embeddings)
+    return all_embeddings
 
 
 def main() -> None:

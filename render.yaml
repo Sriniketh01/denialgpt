@@ -2,11 +2,13 @@ services:
   - type: web
     name: denialgpt
     runtime: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python -m policy_kb.embed_pdfs
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: VOYAGE_API_KEY
         sync: false
       - key: FHIR_BASE_URL
         sync: false

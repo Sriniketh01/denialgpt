@@ -343,15 +343,17 @@ async def test_mcp_server_reachability():
             f"/.well-known/agent.json returned HTTP {agent_resp.status_code}"
         )
         agent_data = agent_resp.json()
-        tools = agent_data.get("tools", [])
-        assert len(tools) == 3, (
-            f"Expected 3 tools in agent.json, got {len(tools)}: "
-            f"{[t.get('name') for t in tools]}"
+        # Agent card uses "skills" key (A2A v1 spec)
+        skills = agent_data.get("skills", [])
+        assert len(skills) == 4, (
+            f"Expected 4 skills in agent.json, got {len(skills)}: "
+            f"{[s.get('name') for s in skills]}"
         )
-        tool_names = {t["name"] for t in tools}
-        assert tool_names == {
+        skill_names = {s["name"] for s in skills}
+        assert skill_names == {
             "analyze_denial",
             "fetch_clinical_evidence",
             "gap_analysis",
-        }, f"Unexpected tool names: {tool_names}"
-        print(f"  ✓ agent.json → {len(tools)} tools: {sorted(tool_names)}")
+            "check_claim_policy",
+        }, f"Unexpected skill names: {skill_names}"
+        print(f"  ✓ agent.json → {len(skills)} skills: {sorted(skill_names)}")

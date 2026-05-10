@@ -53,8 +53,11 @@ from pathlib import Path
 
 import anthropic
 from dotenv import load_dotenv
-from google.adk.tools import ToolContext
 from pydantic import BaseModel
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from google.adk.tools import ToolContext
 
 from policy_kb.retrieve import retrieve_policy_chunks
 from shared.payer_patterns import get_payer_pattern
