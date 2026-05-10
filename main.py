@@ -370,6 +370,96 @@ _CLINICAL_KEYWORDS = {
     "none on record", "on record", "documented", "prescribed",
 }
 
+_PREVENTION_KEYWORDS = {
+    "before submitting", "before submission", "pre-submission", "pre submission",
+    "denial risk", "denial risks", "prior to submission", "what to do before",
+    "before i submit", "should i submit", "check before", "risk of denial",
+    "submitting a claim", "submit a claim", "submitting the claim",
+}
+
+def _message_is_prevention_query(text: str) -> bool:
+    """Return True if the message is a pre-submission risk check, not a denial letter.
+
+    Prevention queries ask "what are the risks before I submit?" rather than
+    providing an actual denial letter.  Route these to check_claim_policy instead
+    of analyze_denial to avoid JSON parse errors.
+    """
+    lower = text.lower()
+    return any(kw in lower for kw in _PREVENTION_KEYWORDS)
+
+
+def _extract_claim_params(text: str) -> dict:
+    """Best-effort extraction of CPT, ICD-10, payer, and setting from free text."""
+    import re as _re
+    cpt_m   = _re.search(r"CPT[^0-9]{0,5}(\d{5})", text, _re.IGNORECASE)
+    icd_m   = _re.search(r"ICD[^A-Z]{0,5}([A-Z]\d{2}\.?\d*)", text, _re.IGNORECASE)
+    payer_m = _re.search(r"(Aetna|UnitedHealth|Cigna|Humana|BCBS|Blue Cross)", text, _re.IGNORECASE)
+    pos_m   = _re.search(r"(outpatient|inpatient|office|hospital)", text, _re.IGNORECASE)
+    # simple description: anything in parentheses after the CPT code
+    desc_m  = _re.search(r"CPT\s*\d{5}\s*[(]([^)]{5,60})[)]", text, _re.IGNORECASE)
+    return {
+        "cpt_code":              cpt_m.group(1)   if cpt_m   else "73721",
+        "icd10_code":            icd_m.group(1)   if icd_m   else "M17.11",
+        "payer":                 payer_m.group(1) if payer_m else "Aetna",
+        "place_of_service":      pos_m.group(1)   if pos_m   else "outpatient",
+        "procedure_description": desc_m.group(1).strip() if desc_m else "",
+    }
+def _format_prevention_result(result: dict, params: dict) -> str:
+    """Format check_claim_policy output as readable markdown."""
+    risk   = result.get("overall_risk", "UNKNOWN")
+    icon   = {"LOW": "🟢", "MEDIUM": "🟡", "HIGH": "🔴", "UNKNOWN": "⚪"}.get(risk, "⚪")
+    flags  = result.get("risk_flags", [])
+    fixes  = result.get("recommended_fixes", [])
+    refs   = result.get("policy_references", [])
+    intel  = result.get("payer_intelligence") or {}
+
+    lines = [
+        "## DenialGPT — Pre-Submission Risk Check",
+        "",
+        f"**CPT:** {params['cpt_code']}  |  "
+        f"**ICD-10:** {params['icd10_code']}  |  "
+        f"**Payer:** {params['payer']}  |  "
+        f"**Setting:** {params['place_of_service']}",
+        "",
+        f"### Overall Denial Risk: {risk} {icon}",
+        "",
+    ]
+
+    if flags:
+        lines.append("### Risk Flags")
+        for f in flags:
+            sev  = f.get("severity", "")
+            flag = f.get("flag", "")
+            basis = f.get("policy_basis", "")
+            rec   = f.get("recommendation", "")
+            lines.append(f"- **[{sev}]** {flag}")
+            if basis:
+                lines.append(f"  - Policy: {basis}")
+            if rec:
+                lines.append(f"  - Action: {rec}")
+
+    if fixes:
+        lines += ["", "### Required Actions Before Submission"]
+        for fix in fixes:
+            lines.append(f"- {fix}")
+
+    if refs:
+        lines += ["", f"**Policy References:** {', '.join(refs)}"]
+
+    if intel:
+        lines += [
+            "",
+            "### Payer Intelligence (Aetna Historical)",
+            f"- Denial rate for this code combination: **{intel.get('denial_rate', 'N/A')}**",
+            f"- Top denial reason: {intel.get('top_reason', 'N/A')}",
+            f"- Appeal win rate: **{intel.get('appeal_win_rate', 'N/A')}**",
+            f"- Winning evidence: {intel.get('winning_evidence', 'N/A')}",
+            f"- Prevention: {intel.get('prevention', 'N/A')}",
+        ]
+
+    return "\n".join(lines)
+
+
 def _message_has_clinical_content(text: str) -> bool:
     """Return True if the message body appears to contain forwarded clinical data.
 
@@ -465,6 +555,19 @@ async def a2a_agent(request: Request):
 
     # ── Run tool chain ─────────────────────────────────────────────────────
     try:
+        # ── Path P: Pre-submission prevention query → check_claim_policy ──────
+        if _message_is_prevention_query(user_text):
+            from prevention.check_claim_policy import ClaimDraft, run_check_claim_policy
+
+            params = _extract_claim_params(user_text)
+            logger.info("prevention_query cpt=%s icd10=%s payer=%s",
+                        params["cpt_code"], params["icd10_code"], params["payer"])
+
+            claim = ClaimDraft(**params)
+            prevention_result = await run_check_claim_policy(claim)
+            result_text = _format_prevention_result(prevention_result.model_dump(), params)
+            return _a2a_response(rpc_id, result_text)
+
         denial_result = await run_analyze_denial(denial_text=user_text, payer="Aetna")
         logger.info("analyze_denial done denial_type=%s carc=%s",
                     denial_result.get("denial_type"), denial_result.get("carc_code"))
