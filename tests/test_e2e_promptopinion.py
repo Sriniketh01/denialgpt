@@ -356,4 +356,13 @@ async def test_mcp_server_reachability():
             "gap_analysis",
             "check_claim_policy",
         }, f"Unexpected skill names: {skill_names}"
-        print(f"  ✓ agent.json → {len(skills)} skills: {sorted(skill_names)}")
+        print(f"  \u2713 agent.json \u2192 {len(skills)} skills found")
+
+
+# ===========================================================================
+# pytest entry point
+# ===========================================================================
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(pytest.main([__file__, "-v"]))

@@ -721,33 +721,32 @@ async def agent_card_legacy():
 
 # ── Health check ───────────────────────────────────────────────────────────
 
+
+# ---------------------------------------------------------------------------
+# Health check
+# ---------------------------------------------------------------------------
+
 @app.get("/health")
 async def health_check():
-    base_url = os.getenv("AGENT_BASE_URL", "https://denialgpt.onrender.com")
-    dev_mode = not all([
-        os.getenv("FHIR_BASE_URL", "").startswith("https://"),
-        os.getenv("DEV_ACCESS_TOKEN", "dev-token") != "dev-token",
-    ])
-    return {
-        "status": "ok",
-        "service": "DenialGPT",
-        "version": "1.0.0",
-        "tools_registered": ["analyze_denial", "fetch_clinical_evidence", "gap_analysis", "check_claim_policy"],
-        "agent_card": f"{base_url}/.well-known/agent-card.json",
-        "dev_mode": dev_mode,
-    }
+    return {"status": "ok", "service": "DenialGPT", "version": "1.0.0"}
 
 
-# ── FastMCP mount (dev/testing) ────────────────────────────────────────────
+# ---------------------------------------------------------------------------
+# Mount FastMCP at /mcp (dev / testing)
+# ---------------------------------------------------------------------------
 
 app.mount("/mcp", mcp.http_app())
 
 
 # ---------------------------------------------------------------------------
-# Standalone run
+# Entry point
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", "8000"))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "8000")),
+        reload=False,
+    )

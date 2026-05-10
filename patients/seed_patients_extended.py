@@ -41,6 +41,10 @@ from patients.seed_patients import (
 )
 
 load_dotenv()
+# Also load .env.promptopinion so FHIR_BASE_URL / DEV_ACCESS_TOKEN are available without CLI flags
+_env_po = Path(__file__).resolve().parent.parent / ".env.promptopinion"
+if _env_po.exists():
+    load_dotenv(_env_po, override=False)
 
 
 # ---------------------------------------------------------------------------
@@ -449,6 +453,16 @@ async def main() -> None:
         f"\n# Extended patients — seed_patients_extended.py\n"
         f"KIM_PATIENT_ID={pid4}\n"
         f"RODRIGUEZ_PATIENT_ID={pid5}\n"
+        f"VASQUEZ_PATIENT_ID={pid6}\n"
+    )
+    with open(env_file, "a", encoding="utf-8") as f:
+        f.write(additions)
+    print(f"\nAppended to {env_file}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+NT_ID={pid5}\n"
         f"VASQUEZ_PATIENT_ID={pid6}\n"
     )
     with open(env_file, "a", encoding="utf-8") as f:
