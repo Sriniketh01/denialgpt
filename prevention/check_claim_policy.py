@@ -392,24 +392,63 @@ async def run_check_claim_policy(claim: ClaimDraft) -> PolicyCheckResult:
     # 3. Early return if no policy data available
     # ------------------------------------------------------------------
     if not chunks:
-        return PolicyCheckResult(
-            overall_risk="UNKNOWN",
-            risk_flags=[
-                {
-                    "flag": "No policy data found for this CPT/ICD-10 combination",
-                    "severity": "HIGH",
-                    "policy_basis": "Policy Knowledge Base returned no results",
-                    "recommendation": (
-                        "Perform manual policy review against payer guidelines "
-                        "before submitting this claim."
-                    ),
-                }
-            ],
-            policy_references=[],
-            recommended_fixes=[
+        # Derive risk level from payer intelligence even when ChromaDB has no chunks.
+        # Parse denial_rate string like "54%" → float 0.54
+        _dr_str = payer_intel.get("denial_rate", "0%").replace("%", "").strip()
+        try:
+            _dr = float(_dr_str) / 100.0
+        except ValueError:
+            _dr = 0.0
+
+        if _dr >= 0.40:
+            _risk = "HIGH"
+        elif _dr >= 0.20:
+            _risk = "MEDIUM"
+        elif _dr > 0:
+            _risk = "LOW"
+        else:
+            _risk = "UNKNOWN"
+
+        # Build clinical risk flags from payer prevention guidance
+        _prevention = payer_intel.get("prevention", "")
+        _top_reason = payer_intel.get("top_reason", "")
+        _flags = []
+        if _top_reason:
+            _flags.append({
+                "flag": f"Historical top denial reason: {_top_reason}",
+                "severity": "HIGH" if _dr >= 0.40 else "MEDIUM",
+                "policy_basis": (
+                    f"{claim.payer} historical data — "
+                    f"{payer_intel.get('denial_rate', 'N/A')} denial rate for "
+                    f"CPT {claim.cpt_code} / {claim.icd10_code}"
+                ),
+                "recommendation": _prevention or "Review payer guidelines before submitting.",
+            })
+        if not _flags:
+            _flags.append({
+                "flag": "No policy data found for this CPT/ICD-10 combination",
+                "severity": "HIGH",
+                "policy_basis": "Policy Knowledge Base returned no results",
+                "recommendation": (
+                    "Perform manual policy review against payer guidelines "
+                    "before submitting this claim."
+                ),
+            })
+
+        _fixes = []
+        if _prevention:
+            _fixes.append(_prevention)
+        else:
+            _fixes.append(
                 "No CMS LCD/NCD data found for this claim combination. "
                 "Manual compliance review required before submission."
-            ],
+            )
+
+        return PolicyCheckResult(
+            overall_risk=_risk,
+            risk_flags=_flags,
+            policy_references=[],
+            recommended_fixes=_fixes,
             payer_intelligence=payer_intel,
         )
 
