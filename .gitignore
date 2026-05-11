@@ -23,7 +23,8 @@ env/
 .pytest_cache/
 
 # Generated artifacts
-policy_kb/chroma_store/
+# chroma_store is committed so Render has the pre-built vector index
+# policy_kb/chroma_store/
 
 # Build plan doc
 DenialGPT_Build_Plan*
