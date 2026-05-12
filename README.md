@@ -66,12 +66,12 @@ Prompt Opinion Platform
 
 ## Tools
 
-| Tool | Owner | Description |
-|------|-------|-------------|
-| `check_claim_policy` | Person B | RAG-based pre-submission risk check against CMS LCD/NCD policies + payer intelligence |
-| `analyze_denial` | Person A | Classifies denial type, extracts CARC code, identifies root cause |
-| `fetch_clinical_evidence` | Person A | Queries FHIR sandbox for patient records relevant to the denial type |
-| `gap_analysis` | Person A | Compares payer requirements vs FHIR evidence, returns STRONG / WEAK / DO NOT APPEAL |
+| Tool | Description |
+|------|-------------|
+| `check_claim_policy` | RAG-based pre-submission risk check against CMS LCD/NCD policies + payer intelligence |
+| `analyze_denial` | Classifies denial type, extracts CARC code, identifies root cause |
+| `fetch_clinical_evidence` | Queries FHIR sandbox for patient records relevant to the denial type |
+| `gap_analysis` | Compares payer requirements vs FHIR evidence, returns STRONG / WEAK / DO NOT APPEAL |
 
 ---
 
@@ -130,7 +130,7 @@ policy_kb/
   retrieve.py                  Semantic search over the policy knowledge base
   pdfs/                        CMS LCD/NCD .txt policy documents
 shared/
-  payer_patterns.py            PAYER_PATTERNS dict (used by both Person A and Person B)
+  payer_patterns.py            PAYER_PATTERNS dict 
 tools/
   analyze_denial.py            Post-denial classification tool
   fetch_evidence.py            FHIR clinical evidence fetcher
@@ -189,5 +189,5 @@ Required environment variables on Render:
 
 Built for the **Agents Assemble Hackathon** on Devpost, hosted on the Prompt Opinion healthcare AI platform.
 
-- **Person A** — Post-denial pipeline: `analyze_denial`, `fetch_clinical_evidence`, `gap_analysis`, FHIR integration, server architecture
-- **Person B** — Prevention pipeline: `check_claim_policy`, Policy Knowledge Base, PAYER_PATTERNS, platform deployment
+- **Sriniketh** — Post-denial pipeline: `analyze_denial`, `fetch_clinical_evidence`, `gap_analysis`, FHIR integration, server architecture
+- **Harshitha** — Prevention pipeline: `check_claim_policy`, Policy Knowledge Base, PAYER_PATTERNS, platform deployment
