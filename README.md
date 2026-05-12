@@ -2,7 +2,7 @@
 
 **AI agent that prevents insurance claim denials before they happen — and fights them after they do.**
 
-Built for the [Agents Assemble Hackathon](https://devpost.com) on the [Prompt Opinion](https://app.promptopinion.ai) healthcare AI platform.
+Built for the [Agents Assemble Hackathon](https://agents-assemble.devpost.com/) on the [Prompt Opinion](https://app.promptopinion.ai) healthcare AI platform.
 
 ---
 
