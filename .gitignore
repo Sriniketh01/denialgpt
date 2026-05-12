@@ -22,9 +22,6 @@ env/
 # pytest
 .pytest_cache/
 
-# Generated artifacts
-policy_kb/chroma_store/
-
 # Build plan doc
 DenialGPT_Build_Plan*
 
